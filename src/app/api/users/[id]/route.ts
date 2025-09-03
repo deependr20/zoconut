@@ -8,7 +8,7 @@ import { UserRole } from '@/types';
 // GET /api/users/[id] - Get specific user
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -17,8 +17,9 @@ export async function GET(
     }
 
     await connectDB();
+    const { id } = await params;
 
-    const user = await User.findById(params.id).select('-password');
+    const user = await User.findById(id).select('-password');
     if (!user) {
       return NextResponse.json(
         { error: 'User not found' },
@@ -27,15 +28,15 @@ export async function GET(
     }
 
     // Check if user has access to view this profile
-    const hasAccess = 
+    const hasAccess =
       session.user.role === UserRole.ADMIN ||
-      session.user.id === params.id ||
-      (session.user.role === UserRole.DIETITIAN && 
-       user.role === UserRole.CLIENT && 
+      session.user.id === id ||
+      (session.user.role === UserRole.DIETITIAN &&
+       user.role === UserRole.CLIENT &&
        user.assignedDietitian?.toString() === session.user.id) ||
-      (session.user.role === UserRole.CLIENT && 
+      (session.user.role === UserRole.CLIENT &&
        user.role === UserRole.DIETITIAN &&
-       session.user.assignedDietitian === params.id);
+       (session.user as any).assignedDietitian === id);
 
     if (!hasAccess) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -55,7 +56,7 @@ export async function GET(
 // PUT /api/users/[id] - Update specific user (admin only)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -63,15 +64,16 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { id } = await params;
     // Only admins can update other users, or users can update themselves
-    if (session.user.role !== UserRole.ADMIN && session.user.id !== params.id) {
+    if (session.user.role !== UserRole.ADMIN && session.user.id !== id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
     const body = await request.json();
     await connectDB();
 
-    const user = await User.findById(params.id);
+    const user = await User.findById(id);
     if (!user) {
       return NextResponse.json(
         { error: 'User not found' },
@@ -91,7 +93,7 @@ export async function PUT(
     // Filter body to only include allowed fields
     const updateData = Object.keys(body)
       .filter(key => allowedFields.includes(key))
-      .reduce((obj, key) => {
+      .reduce((obj: any, key) => {
         obj[key] = body[key];
         return obj;
       }, {});
@@ -117,7 +119,7 @@ export async function PUT(
 // DELETE /api/users/[id] - Deactivate user (admin only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -126,8 +128,9 @@ export async function DELETE(
     }
 
     await connectDB();
+    const { id } = await params;
 
-    const user = await User.findById(params.id);
+    const user = await User.findById(id);
     if (!user) {
       return NextResponse.json(
         { error: 'User not found' },

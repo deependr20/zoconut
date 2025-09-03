@@ -133,12 +133,12 @@ export default function StartConversation({ onSelectUser }: StartConversationPro
                   {user.role === 'dietitian' ? 'Dr. ' : ''}
                   {user.firstName} {user.lastName}
                   {user.isAssigned && (
-                    <Badge className="ml-2 bg-blue-100 text-blue-800" size="sm">
+                    <Badge className="ml-2 bg-blue-100 text-blue-800">
                       Assigned
                     </Badge>
                   )}
                 </p>
-                <Badge className={getRoleColor(user.role)} size="sm">
+                <Badge className={getRoleColor(user.role)}>
                   <span className="flex items-center space-x-1">
                     {getRoleIcon(user.role)}
                     <span className="capitalize">{user.role}</span>

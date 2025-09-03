@@ -391,7 +391,7 @@ export default function AppointmentDetailPage() {
                 
                 <div className="flex justify-between">
                   <span className="text-gray-600">Status:</span>
-                  <Badge className={getStatusColor(appointment.status)} size="sm">
+                  <Badge className={getStatusColor(appointment.status)}>
                     {appointment.status}
                   </Badge>
                 </div>

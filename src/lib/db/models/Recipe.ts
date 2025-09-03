@@ -54,7 +54,7 @@ const ingredientSchema = new Schema({
   }
 });
 
-const recipeSchema = new Schema<IRecipe>({
+const recipeSchema = new Schema({
   name: {
     type: String,
     required: true,

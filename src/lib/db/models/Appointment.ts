@@ -1,7 +1,22 @@
-import mongoose, { Schema } from 'mongoose';
+import mongoose, { Schema, Model } from 'mongoose';
 import { IAppointment, AppointmentStatus, AppointmentType } from '@/types';
 
-const appointmentSchema = new Schema<IAppointment>({
+interface IAppointmentMethods {
+  endTime: Date;
+}
+
+interface IAppointmentStatics {
+  findConflicts(
+    dietitianId: string,
+    scheduledAt: Date,
+    duration: number,
+    excludeId?: string
+  ): Promise<IAppointment[]>;
+}
+
+type AppointmentModel = Model<IAppointment, {}, IAppointmentMethods> & IAppointmentStatics;
+
+const appointmentSchema = new Schema({
   dietitian: {
     type: Schema.Types.ObjectId,
     ref: 'User',
@@ -111,6 +126,6 @@ appointmentSchema.set('toJSON', {
   virtuals: true
 });
 
-const Appointment = mongoose.models.Appointment || mongoose.model<IAppointment>('Appointment', appointmentSchema);
+const Appointment = (mongoose.models.Appointment || mongoose.model<IAppointment, AppointmentModel>('Appointment', appointmentSchema)) as AppointmentModel;
 
 export default Appointment;

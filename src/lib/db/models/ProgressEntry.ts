@@ -24,7 +24,7 @@ const measurementsSchema = new Schema({
   }
 });
 
-const progressEntrySchema = new Schema<IProgressEntry>({
+const progressEntrySchema = new Schema({
   client: {
     type: Schema.Types.ObjectId,
     ref: 'User',
@@ -168,7 +168,7 @@ progressEntrySchema.virtual('summary').get(function() {
     date: this.date,
     hasWeight: !!this.weight,
     hasBodyComposition: !!(this.bodyFat || this.muscleMass),
-    hasMeasurements: !!(this.measurements && Object.keys(this.measurements.toObject()).length > 0),
+    hasMeasurements: !!(this.measurements && Object.keys(this.measurements).length > 0),
     hasPhotos: !!(this.photos && this.photos.length > 0),
     hasNotes: !!this.notes
   };

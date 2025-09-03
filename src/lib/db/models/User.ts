@@ -18,7 +18,7 @@ const availabilitySchema = new Schema({
   }
 });
 
-const userSchema = new Schema<IUser>({
+const userSchema = new Schema({
   email: {
     type: String,
     required: true,
@@ -126,8 +126,7 @@ const userSchema = new Schema<IUser>({
   timestamps: true
 });
 
-// Index for better query performance
-userSchema.index({ email: 1 });
+// Index for better query performance (email index is automatic due to unique: true)
 userSchema.index({ role: 1 });
 userSchema.index({ assignedDietitian: 1 });
 
@@ -157,7 +156,7 @@ userSchema.virtual('fullName').get(function() {
 // Ensure virtual fields are serialized
 userSchema.set('toJSON', {
   virtuals: true,
-  transform: function(doc, ret) {
+  transform: function(doc: any, ret: any) {
     delete ret.password;
     return ret;
   }

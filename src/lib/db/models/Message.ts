@@ -1,7 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 import { IMessage, MessageType } from '@/types';
 
-const messageSchema = new Schema<IMessage>({
+const messageSchema = new Schema({
   sender: {
     type: Schema.Types.ObjectId,
     ref: 'User',
@@ -32,6 +32,17 @@ const messageSchema = new Schema<IMessage>({
   isRead: {
     type: Boolean,
     default: false
+  },
+  readAt: {
+    type: Date
+  },
+  status: {
+    type: String,
+    enum: ['sending', 'sent', 'delivered', 'read', 'failed'],
+    default: 'sent'
+  },
+  deliveredAt: {
+    type: Date
   }
 }, {
   timestamps: true
@@ -42,13 +53,9 @@ messageSchema.index({ sender: 1, receiver: 1, createdAt: -1 });
 messageSchema.index({ receiver: 1, isRead: 1 });
 messageSchema.index({ createdAt: -1 });
 
-// Compound index for conversation queries
-messageSchema.index({
-  $or: [
-    { sender: 1, receiver: 1 },
-    { sender: 1, receiver: 1 }
-  ]
-});
+// Additional indexes for conversation queries
+messageSchema.index({ sender: 1, createdAt: -1 });
+messageSchema.index({ receiver: 1, createdAt: -1 });
 
 // Static method to get conversation between two users
 messageSchema.statics.getConversation = function(user1Id: string, user2Id: string, limit = 50, skip = 0) {
@@ -155,6 +162,43 @@ messageSchema.statics.getRecentConversations = function(userId: string) {
       $sort: { 'lastMessage.createdAt': -1 }
     }
   ]);
+};
+
+// Instance methods for message status updates
+messageSchema.methods.markAsDelivered = function() {
+  this.status = 'delivered';
+  this.deliveredAt = new Date();
+  return this.save();
+};
+
+messageSchema.methods.markAsRead = function() {
+  this.isRead = true;
+  this.readAt = new Date();
+  this.status = 'read';
+  return this.save();
+};
+
+messageSchema.methods.markAsFailed = function() {
+  this.status = 'failed';
+  return this.save();
+};
+
+// Static method to mark multiple messages as read
+messageSchema.statics.markConversationAsRead = function(senderId: string, receiverId: string) {
+  return this.updateMany(
+    {
+      sender: senderId,
+      receiver: receiverId,
+      isRead: false
+    },
+    {
+      $set: {
+        isRead: true,
+        readAt: new Date(),
+        status: 'read'
+      }
+    }
+  );
 };
 
 const Message = mongoose.models.Message || mongoose.model<IMessage>('Message', messageSchema);

@@ -1,16 +1,11 @@
 import { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { MongoDBAdapter } from '@auth/mongodb-adapter';
-import { MongoClient } from 'mongodb';
 import connectDB from '@/lib/db/connection';
 import User from '@/lib/db/models/User';
 import { UserRole } from '@/types';
 
-const client = new MongoClient(process.env.MONGODB_URI!);
-const clientPromise = client.connect();
-
 export const authOptions: NextAuthOptions = {
-  adapter: MongoDBAdapter(clientPromise),
+  // adapter: MongoDBAdapter(clientPromise), // Temporarily disabled due to type compatibility
   providers: [
     CredentialsProvider({
       name: 'credentials',
@@ -76,7 +71,7 @@ export const authOptions: NextAuthOptions = {
         token.firstName = user.firstName;
         token.lastName = user.lastName;
         token.avatar = user.avatar;
-        token.emailVerified = user.emailVerified;
+        token.emailVerified = !!user.emailVerified;
       }
 
       // Handle session update
@@ -107,7 +102,6 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: '/auth/signin',
-    signUp: '/auth/signup',
     error: '/auth/error',
   },
   events: {

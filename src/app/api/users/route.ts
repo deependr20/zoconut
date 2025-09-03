@@ -115,7 +115,7 @@ export async function PUT(request: NextRequest) {
     // Filter body to only include allowed fields
     const updateData = Object.keys(body)
       .filter(key => allowedFields.includes(key))
-      .reduce((obj, key) => {
+      .reduce((obj: any, key) => {
         obj[key] = body[key];
         return obj;
       }, {});

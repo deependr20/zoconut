@@ -1,7 +1,7 @@
 import mongoose, { Schema } from 'mongoose';
 import { IPayment, PaymentStatus, PaymentType } from '@/types';
 
-const paymentSchema = new Schema<IPayment>({
+const paymentSchema = new Schema({
   client: {
     type: Schema.Types.ObjectId,
     ref: 'User',
@@ -51,11 +51,10 @@ const paymentSchema = new Schema<IPayment>({
   timestamps: true
 });
 
-// Indexes for better query performance
+// Indexes for better query performance (transactionId index is automatic due to unique: true)
 paymentSchema.index({ client: 1, createdAt: -1 });
 paymentSchema.index({ dietitian: 1, createdAt: -1 });
 paymentSchema.index({ status: 1 });
-paymentSchema.index({ transactionId: 1 });
 paymentSchema.index({ type: 1 });
 
 // Static method to get payment history for a client

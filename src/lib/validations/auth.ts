@@ -34,7 +34,7 @@ export const signUpSchema = z.object({
     .min(1, 'Last name is required')
     .max(50, 'Last name must be less than 50 characters'),
   role: z.enum([UserRole.CLIENT, UserRole.DIETITIAN], {
-    required_error: 'Please select a role',
+    message: 'Please select a role',
   }),
   phone: z
     .string()
@@ -78,7 +78,7 @@ export const clientProfileSchema = z.object({
       return age >= 13 && age <= 120;
     }, 'Age must be between 13 and 120 years'),
   gender: z.enum(['male', 'female', 'other'], {
-    required_error: 'Please select your gender',
+    message: 'Please select your gender',
   }),
   height: z
     .number()
@@ -91,7 +91,7 @@ export const clientProfileSchema = z.object({
   activityLevel: z.enum(
     ['sedentary', 'light', 'moderate', 'active', 'very_active'],
     {
-      required_error: 'Please select your activity level',
+      message: 'Please select your activity level',
     }
   ),
   healthGoals: z

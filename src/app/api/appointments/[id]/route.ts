@@ -8,7 +8,7 @@ import { UserRole, AppointmentStatus } from '@/types';
 // GET /api/appointments/[id] - Get specific appointment
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -17,8 +17,9 @@ export async function GET(
     }
 
     await connectDB();
+    const { id } = await params;
 
-    const appointment = await Appointment.findById(params.id)
+    const appointment = await Appointment.findById(id)
       .populate('dietitian', 'firstName lastName email avatar')
       .populate('client', 'firstName lastName email avatar');
 
@@ -30,10 +31,10 @@ export async function GET(
     }
 
     // Check if user has access to this appointment
-    const hasAccess = 
+    const hasAccess =
       session.user.role === UserRole.ADMIN ||
-      appointment.dietitian._id.toString() === session.user.id ||
-      appointment.client._id.toString() === session.user.id;
+      (appointment.dietitian as any)._id.toString() === session.user.id ||
+      (appointment.client as any)._id.toString() === session.user.id;
 
     if (!hasAccess) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
@@ -53,7 +54,7 @@ export async function GET(
 // PUT /api/appointments/[id] - Update appointment
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -63,8 +64,9 @@ export async function PUT(
 
     const body = await request.json();
     await connectDB();
+    const { id } = await params;
 
-    const appointment = await Appointment.findById(params.id);
+    const appointment = await Appointment.findById(id);
     if (!appointment) {
       return NextResponse.json(
         { error: 'Appointment not found' },
@@ -92,7 +94,7 @@ export async function PUT(
         appointment.dietitian.toString(),
         newScheduledAt,
         newDuration,
-        params.id
+        id
       );
 
       if (conflicts.length > 0) {
@@ -125,7 +127,7 @@ export async function PUT(
 // DELETE /api/appointments/[id] - Cancel appointment
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -134,8 +136,9 @@ export async function DELETE(
     }
 
     await connectDB();
+    const { id } = await params;
 
-    const appointment = await Appointment.findById(params.id);
+    const appointment = await Appointment.findById(id);
     if (!appointment) {
       return NextResponse.json(
         { error: 'Appointment not found' },

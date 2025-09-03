@@ -224,7 +224,7 @@ export default function MealPlansPage() {
                         </td>
                         <td className="p-4">
                           <div className="flex flex-col space-y-1">
-                            <Badge className={getStatusColor(plan.isActive)} size="sm">
+                            <Badge className={getStatusColor(plan.isActive)}>
                               {plan.isActive ? 'Active' : 'Inactive'}
                             </Badge>
                             {isPlanActive(plan.startDate, plan.endDate) && (

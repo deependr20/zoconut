@@ -72,7 +72,7 @@ const mealSchema = new Schema({
   }
 });
 
-const foodLogSchema = new Schema<IFoodLog>({
+const foodLogSchema = new Schema({
   client: {
     type: Schema.Types.ObjectId,
     ref: 'User',
@@ -113,15 +113,15 @@ foodLogSchema.pre('save', function(next) {
     sodium: 0
   };
   
-  this.meals.forEach(meal => {
-    meal.foods.forEach(food => {
-      totalNutrition.calories += food.calories;
-      totalNutrition.protein += food.nutrition.protein;
-      totalNutrition.carbs += food.nutrition.carbs;
-      totalNutrition.fat += food.nutrition.fat;
-      totalNutrition.fiber = (totalNutrition.fiber || 0) + (food.nutrition.fiber || 0);
-      totalNutrition.sugar = (totalNutrition.sugar || 0) + (food.nutrition.sugar || 0);
-      totalNutrition.sodium = (totalNutrition.sodium || 0) + (food.nutrition.sodium || 0);
+  this.meals.forEach((meal: any) => {
+    meal.foods.forEach((food: any) => {
+      totalNutrition.calories += food.calories || 0;
+      totalNutrition.protein += food.nutrition?.protein || 0;
+      totalNutrition.carbs += food.nutrition?.carbs || 0;
+      totalNutrition.fat += food.nutrition?.fat || 0;
+      totalNutrition.fiber = (totalNutrition.fiber || 0) + (food.nutrition?.fiber || 0);
+      totalNutrition.sugar = (totalNutrition.sugar || 0) + (food.nutrition?.sugar || 0);
+      totalNutrition.sodium = (totalNutrition.sodium || 0) + (food.nutrition?.sodium || 0);
     });
   });
   
@@ -217,7 +217,7 @@ foodLogSchema.statics.getMealTypeBreakdown = function(clientId: string, days = 7
 
 // Method to add meal to existing log
 foodLogSchema.methods.addMeal = function(mealType: string, foods: any[]) {
-  const existingMealIndex = this.meals.findIndex(meal => meal.type === mealType);
+  const existingMealIndex = this.meals.findIndex((meal: any) => meal.type === mealType);
   
   if (existingMealIndex >= 0) {
     this.meals[existingMealIndex].foods.push(...foods);

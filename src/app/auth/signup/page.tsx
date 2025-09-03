@@ -110,7 +110,7 @@ export default function SignUpPage() {
               {/* Role Selection */}
               <div className="space-y-2">
                 <Label>I am a</Label>
-                <Select onValueChange={(value) => setValue('role', value as UserRole)}>
+                <Select onValueChange={(value) => setValue('role', value as UserRole.CLIENT | UserRole.DIETITIAN)}>
                   <SelectTrigger className={errors.role ? 'border-red-500' : ''}>
                     <SelectValue placeholder="Select your role" />
                   </SelectTrigger>

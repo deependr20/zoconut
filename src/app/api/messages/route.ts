@@ -4,6 +4,8 @@ import { authOptions } from '@/lib/auth/config';
 import connectDB from '@/lib/db/connection';
 import Message from '@/lib/db/models/Message';
 import { UserRole } from '@/types';
+import { SSEManager } from '@/lib/realtime/sse-manager';
+import { createMessageWebhook } from '@/lib/webhooks/webhook-manager';
 
 // GET /api/messages - Get messages for current user
 export async function GET(request: NextRequest) {
@@ -115,6 +117,16 @@ export async function POST(request: NextRequest) {
     // Populate the created message
     await message.populate('sender', 'firstName lastName avatar');
     await message.populate('receiver', 'firstName lastName avatar');
+
+    // Send real-time notification to recipient
+    const sseManager = SSEManager.getInstance();
+    sseManager.sendToUser(recipientId, 'new_message', {
+      message: message.toJSON(),
+      timestamp: Date.now()
+    });
+
+    // Trigger webhook for message sent
+    await createMessageWebhook(message.toJSON(), 'sent');
 
     return NextResponse.json(message, { status: 201 });
 

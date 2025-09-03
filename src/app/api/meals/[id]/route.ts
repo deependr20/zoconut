@@ -8,7 +8,7 @@ import { UserRole } from '@/types';
 // GET /api/meals/[id] - Get specific meal plan
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -17,8 +17,9 @@ export async function GET(
     }
 
     await connectDB();
+    const { id } = await params;
 
-    const mealPlan = await MealPlan.findById(params.id)
+    const mealPlan = await MealPlan.findById(id)
       .populate('dietitian', 'firstName lastName email avatar')
       .populate('client', 'firstName lastName email avatar')
       .populate('meals.recipe', 'name description calories macros ingredients instructions');
@@ -54,7 +55,7 @@ export async function GET(
 // PUT /api/meals/[id] - Update meal plan
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -64,8 +65,9 @@ export async function PUT(
 
     const body = await request.json();
     await connectDB();
+    const { id } = await params;
 
-    const mealPlan = await MealPlan.findById(params.id);
+    const mealPlan = await MealPlan.findById(id);
     if (!mealPlan) {
       return NextResponse.json(
         { error: 'Meal plan not found' },
@@ -105,7 +107,7 @@ export async function PUT(
 // DELETE /api/meals/[id] - Delete meal plan
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -114,8 +116,9 @@ export async function DELETE(
     }
 
     await connectDB();
+    const { id } = await params;
 
-    const mealPlan = await MealPlan.findById(params.id);
+    const mealPlan = await MealPlan.findById(id);
     if (!mealPlan) {
       return NextResponse.json(
         { error: 'Meal plan not found' },

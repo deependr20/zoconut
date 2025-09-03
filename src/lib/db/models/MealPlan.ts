@@ -44,7 +44,7 @@ const mealSchema = new Schema({
   }]
 });
 
-const mealPlanSchema = new Schema<IMealPlan>({
+const mealPlanSchema = new Schema({
   name: {
     type: String,
     required: true,
