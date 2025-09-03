@@ -1,9 +1,13 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI!;
+// Get MongoDB URI, but don't throw error during build time
+const MONGODB_URI = process.env.MONGODB_URI;
 
-if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
+function validateMongoUri() {
+  if (!MONGODB_URI) {
+    throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
+  }
+  return MONGODB_URI;
 }
 
 /**
@@ -23,11 +27,12 @@ async function connectDB() {
   }
 
   if (!cached.promise) {
+    const mongoUri = validateMongoUri(); // Validate URI at runtime, not build time
     const opts = {
       bufferCommands: false,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts);
+    cached.promise = mongoose.connect(mongoUri, opts);
   }
 
   try {
