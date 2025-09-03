@@ -6,9 +6,16 @@ import Payment from '@/lib/db/models/Payment';
 import { UserRole } from '@/types';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-07-30.basil',
-});
+// Initialize Stripe only when needed to avoid build-time errors
+function getStripe() {
+  const secretKey = process.env.STRIPE_SECRET_KEY;
+  if (!secretKey) {
+    throw new Error('STRIPE_SECRET_KEY is not configured');
+  }
+  return new Stripe(secretKey, {
+    apiVersion: '2025-07-30.basil',
+  });
+}
 
 // GET /api/payments - Get payments for current user
 export async function GET(request: NextRequest) {
@@ -109,6 +116,7 @@ export async function POST(request: NextRequest) {
     await payment.save();
 
     // Create Stripe payment intent
+    const stripe = getStripe();
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(amount * 100), // Stripe uses cents
       currency: currency.toLowerCase(),

@@ -5,6 +5,11 @@ const MONGODB_URI = process.env.MONGODB_URI;
 
 function validateMongoUri() {
   if (!MONGODB_URI) {
+    // For Vercel deployment without database, return a dummy URI
+    if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+      console.warn('MongoDB URI not configured - database features will be disabled');
+      return 'mongodb://localhost:27017/dummy'; // Dummy URI for build
+    }
     throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
   }
   return MONGODB_URI;
@@ -22,6 +27,12 @@ if (!cached) {
 }
 
 async function connectDB() {
+  // Skip database connection in Vercel if MongoDB URI is not configured
+  if ((process.env.VERCEL || process.env.NODE_ENV === 'production') && !MONGODB_URI) {
+    console.warn('Skipping database connection - MongoDB URI not configured');
+    return null;
+  }
+
   if (cached.conn) {
     return cached.conn;
   }
@@ -40,6 +51,11 @@ async function connectDB() {
     cached.conn = connection;
   } catch (e) {
     cached.promise = null;
+    // In production/Vercel, don't throw error if database is not available
+    if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+      console.warn('Database connection failed - continuing without database');
+      return null;
+    }
     throw e;
   }
 
