@@ -4,8 +4,11 @@ import connectDB from '@/lib/db/connection';
 import User from '@/lib/db/models/User';
 import { UserRole } from '@/types';
 
+// Check if we're in Vercel environment without database
+const isVercelWithoutDB = process.env.VERCEL && !process.env.MONGODB_URI;
+
 export const authOptions: NextAuthOptions = {
-  // adapter: MongoDBAdapter(clientPromise), // Temporarily disabled due to type compatibility
+  secret: process.env.NEXTAUTH_SECRET,
   providers: [
     CredentialsProvider({
       name: 'credentials',
@@ -18,11 +21,46 @@ export const authOptions: NextAuthOptions = {
           throw new Error('Email and password are required');
         }
 
+        // If in Vercel without database, use demo credentials
+        if (isVercelWithoutDB) {
+          // Demo credentials for Vercel deployment
+          if (credentials.email === 'demo@zoconut.com' && credentials.password === 'demo123') {
+            return {
+              id: 'demo-user-id',
+              email: 'demo@zoconut.com',
+              name: 'Demo User',
+              firstName: 'Demo',
+              lastName: 'User',
+              role: UserRole.CLIENT,
+              avatar: null,
+              emailVerified: null
+            };
+          }
+          throw new Error('Demo mode: Use demo@zoconut.com / demo123');
+        }
+
         try {
-          await connectDB();
-          
-          const user = await User.findOne({ 
-            email: credentials.email.toLowerCase() 
+          const dbConnection = await connectDB();
+
+          // If no database connection, fall back to demo mode
+          if (!dbConnection) {
+            if (credentials.email === 'demo@zoconut.com' && credentials.password === 'demo123') {
+              return {
+                id: 'demo-user-id',
+                email: 'demo@zoconut.com',
+                name: 'Demo User',
+                firstName: 'Demo',
+                lastName: 'User',
+                role: UserRole.CLIENT,
+                avatar: null,
+                emailVerified: null
+              };
+            }
+            throw new Error('Database not available. Use demo@zoconut.com / demo123');
+          }
+
+          const user = await User.findOne({
+            email: credentials.email.toLowerCase()
           }).select('+password');
 
           if (!user) {
