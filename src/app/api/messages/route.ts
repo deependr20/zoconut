@@ -6,6 +6,21 @@ import Message from '@/lib/db/models/Message';
 import { UserRole } from '@/types';
 import { SSEManager } from '@/lib/realtime/sse-manager';
 import { createMessageWebhook } from '@/lib/webhooks/webhook-manager';
+import { z } from 'zod';
+
+// Message validation schema
+const messageSchema = z.object({
+  recipientId: z.string().min(1, 'Recipient ID is required'),
+  content: z.string().min(1, 'Message content is required').max(2000, 'Message too long'),
+  type: z.enum(['text', 'image', 'file']).default('text'),
+  attachments: z.array(z.object({
+    url: z.string().min(1, 'Attachment URL is required'),
+    filename: z.string().min(1, 'Filename is required'),
+    size: z.number().min(1, 'File size must be positive'),
+    mimeType: z.string().min(1, 'MIME type is required')
+  })).optional(),
+  replyTo: z.string().optional() // For replying to specific messages
+});
 
 // GET /api/messages - Get messages for current user
 export async function GET(request: NextRequest) {
@@ -91,24 +106,20 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { recipientId, content, type = 'text' } = body;
+
+    // Validate input
+    const validatedData = messageSchema.parse(body);
 
     await connectDB();
-
-    // Validate required fields
-    if (!recipientId || !content) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
-    }
 
     // Create message
     const message = new Message({
       sender: session.user.id,
-      receiver: recipientId,
-      content,
-      type,
+      receiver: validatedData.recipientId,
+      content: validatedData.content,
+      type: validatedData.type,
+      attachments: validatedData.attachments,
+      replyTo: validatedData.replyTo,
       isRead: false
     });
 
@@ -120,7 +131,7 @@ export async function POST(request: NextRequest) {
 
     // Send real-time notification to recipient
     const sseManager = SSEManager.getInstance();
-    sseManager.sendToUser(recipientId, 'new_message', {
+    sseManager.sendToUser(validatedData.recipientId, 'new_message', {
       message: message.toJSON(),
       timestamp: Date.now()
     });

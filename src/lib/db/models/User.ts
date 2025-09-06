@@ -1,5 +1,4 @@
 import mongoose, { Schema } from 'mongoose';
-import bcrypt from 'bcryptjs';
 import { IUser, UserRole, UserStatus } from '@/types';
 
 const availabilitySchema = new Schema({
@@ -130,22 +129,9 @@ const userSchema = new Schema({
 userSchema.index({ role: 1 });
 userSchema.index({ assignedDietitian: 1 });
 
-// Hash password before saving
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next();
-  
-  try {
-    const salt = await bcrypt.genSalt(12);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error) {
-    next(error as Error);
-  }
-});
-
-// Compare password method
+// Simple password comparison method (no hashing)
 userSchema.methods.comparePassword = async function(candidatePassword: string): Promise<boolean> {
-  return bcrypt.compare(candidatePassword, this.password);
+  return this.password === candidatePassword;
 };
 
 // Virtual for full name
@@ -156,7 +142,7 @@ userSchema.virtual('fullName').get(function() {
 // Ensure virtual fields are serialized
 userSchema.set('toJSON', {
   virtuals: true,
-  transform: function(doc: any, ret: any) {
+  transform: function(_doc: any, ret: any) {
     delete ret.password;
     return ret;
   }

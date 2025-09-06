@@ -4,6 +4,7 @@ import User from '@/lib/db/models/User';
 import { UserRole } from '@/types';
 import { z } from 'zod';
 
+// Comprehensive registration schema for API
 const registerSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
@@ -11,19 +12,19 @@ const registerSchema = z.object({
   lastName: z.string().min(1, 'Last name is required'),
   role: z.enum([UserRole.CLIENT, UserRole.DIETITIAN]),
   phone: z.string().optional(),
-  
+
   // Dietitian specific fields
   credentials: z.array(z.string()).optional(),
   specializations: z.array(z.string()).optional(),
   experience: z.number().min(0).optional(),
   bio: z.string().max(1000).optional(),
   consultationFee: z.number().min(0).optional(),
-  
+
   // Client specific fields
   dateOfBirth: z.string().optional(),
   gender: z.enum(['male', 'female', 'other']).optional(),
-  height: z.number().min(0).optional(),
-  weight: z.number().min(0).optional(),
+  height: z.number().min(30, 'Height must be at least 30 cm').max(250, 'Height cannot exceed 250 cm').optional(),
+  weight: z.number().min(20, 'Weight must be at least 20 kg').max(300, 'Weight cannot exceed 300 kg').optional(),
   activityLevel: z.enum(['sedentary', 'light', 'moderate', 'active', 'very_active']).optional(),
   healthGoals: z.array(z.string()).optional(),
   medicalConditions: z.array(z.string()).optional(),

@@ -4,6 +4,31 @@ import { authOptions } from '@/lib/auth/config';
 import connectDB from '@/lib/db/connection';
 import MealPlan from '@/lib/db/models/MealPlan';
 import { UserRole } from '@/types';
+import { z } from 'zod';
+
+// Meal plan validation schema
+const mealPlanSchema = z.object({
+  name: z.string().min(1, 'Meal plan name is required').max(100, 'Name too long'),
+  description: z.string().max(500, 'Description too long').optional(),
+  client: z.string().min(1, 'Client ID is required'),
+  startDate: z.string().refine((date) => !isNaN(Date.parse(date)), 'Invalid start date'),
+  endDate: z.string().refine((date) => !isNaN(Date.parse(date)), 'Invalid end date'),
+  meals: z.array(z.object({
+    day: z.number().min(1).max(7, 'Day must be between 1-7'),
+    mealType: z.enum(['breakfast', 'lunch', 'dinner', 'snack']),
+    recipe: z.string().min(1, 'Recipe ID is required'),
+    servings: z.number().min(0.5, 'Servings must be at least 0.5').max(10, 'Servings cannot exceed 10'),
+    notes: z.string().optional()
+  })).min(1, 'At least one meal is required'),
+  targetCalories: z.number().min(800, 'Target calories too low').max(5000, 'Target calories too high').optional(),
+  targetMacros: z.object({
+    protein: z.number().min(0).max(100).optional(),
+    carbs: z.number().min(0).max(100).optional(),
+    fat: z.number().min(0).max(100).optional()
+  }).optional(),
+  notes: z.string().max(1000, 'Notes too long').optional(),
+  isActive: z.boolean().optional()
+});
 
 // GET /api/meals - Get meal plans
 export async function GET(request: NextRequest) {
@@ -86,14 +111,19 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { clientId, name, description, startDate, endDate, meals, targetCalories, targetMacros } = body;
+
+    // Validate input
+    const validatedData = mealPlanSchema.parse(body);
 
     await connectDB();
 
-    // Validate required fields
-    if (!clientId || !name || !startDate || !endDate || !meals) {
+    // Validate date range
+    const startDate = new Date(validatedData.startDate);
+    const endDate = new Date(validatedData.endDate);
+
+    if (endDate <= startDate) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: 'End date must be after start date' },
         { status: 400 }
       );
     }
@@ -101,15 +131,15 @@ export async function POST(request: NextRequest) {
     // Create meal plan
     const mealPlan = new MealPlan({
       dietitian: session.user.id,
-      client: clientId,
-      name,
-      description,
-      startDate: new Date(startDate),
-      endDate: new Date(endDate),
-      meals,
-      targetCalories,
-      targetMacros,
-      isActive: true
+      client: validatedData.client,
+      name: validatedData.name,
+      description: validatedData.description,
+      startDate,
+      endDate,
+      meals: validatedData.meals,
+      targetCalories: validatedData.targetCalories,
+      targetMacros: validatedData.targetMacros,
+      isActive: validatedData.isActive ?? true
     });
 
     await mealPlan.save();

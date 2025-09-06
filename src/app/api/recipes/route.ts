@@ -4,6 +4,32 @@ import { authOptions } from '@/lib/auth/config';
 import connectDB from '@/lib/db/connection';
 import Recipe from '@/lib/db/models/Recipe';
 import { UserRole } from '@/types';
+import { z } from 'zod';
+
+// Recipe validation schema
+const recipeSchema = z.object({
+  name: z.string().min(1, 'Recipe name is required').max(100, 'Name too long'),
+  description: z.string().max(500, 'Description too long').optional(),
+  ingredients: z.array(z.object({
+    name: z.string().min(1, 'Ingredient name is required'),
+    amount: z.number().min(0, 'Amount must be positive'),
+    unit: z.string().min(1, 'Unit is required')
+  })).min(1, 'At least one ingredient is required'),
+  instructions: z.array(z.string().min(1, 'Instruction cannot be empty')).min(1, 'At least one instruction is required'),
+  prepTime: z.number().min(0, 'Prep time must be positive').optional(),
+  cookTime: z.number().min(0, 'Cook time must be positive').optional(),
+  servings: z.number().min(1, 'Servings must be at least 1'),
+  calories: z.number().min(0, 'Calories must be positive').optional(),
+  macros: z.object({
+    protein: z.number().min(0).optional(),
+    carbs: z.number().min(0).optional(),
+    fat: z.number().min(0).optional(),
+    fiber: z.number().min(0).optional()
+  }).optional(),
+  category: z.string().optional(),
+  dietaryRestrictions: z.array(z.string()).optional(),
+  image: z.string().url('Invalid image URL').optional()
+});
 
 // GET /api/recipes - Get recipes
 export async function GET(request: NextRequest) {
@@ -96,45 +122,15 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { 
-      name, 
-      description, 
-      ingredients, 
-      instructions, 
-      prepTime, 
-      cookTime, 
-      servings, 
-      calories, 
-      macros, 
-      category, 
-      dietaryRestrictions,
-      image 
-    } = body;
+
+    // Validate input
+    const validatedData = recipeSchema.parse(body);
 
     await connectDB();
 
-    // Validate required fields
-    if (!name || !ingredients || !instructions || !servings) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      );
-    }
-
     // Create recipe
     const recipe = new Recipe({
-      name,
-      description,
-      ingredients,
-      instructions,
-      prepTime,
-      cookTime,
-      servings,
-      calories,
-      macros,
-      category,
-      dietaryRestrictions,
-      image,
+      ...validatedData,
       createdBy: session.user.id
     });
 

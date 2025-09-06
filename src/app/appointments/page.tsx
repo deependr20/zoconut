@@ -203,13 +203,32 @@ export default function AppointmentsPage() {
             <h1 className="text-3xl font-bold text-gray-900">Appointments</h1>
             <p className="text-gray-600 mt-1">Manage your consultations</p>
           </div>
-          
-          <Button asChild>
-            <Link href="/appointments/book">
-              <Plus className="h-4 w-4 mr-2" />
-              Book Appointment
-            </Link>
-          </Button>
+
+          <div className="flex space-x-2">
+            {session?.user?.role === 'dietitian' ? (
+              <>
+                <Button asChild variant="outline">
+                  <Link href="/appointments/book">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Book with Dietitian
+                  </Link>
+                </Button>
+                <Button asChild>
+                  <Link href="/appointments/book-client">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Book with Client
+                  </Link>
+                </Button>
+              </>
+            ) : (
+              <Button asChild>
+                <Link href="/appointments/book">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Book Appointment
+                </Link>
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Appointments Tabs */}
@@ -239,9 +258,22 @@ export default function AppointmentsPage() {
                   <p className="text-gray-600 mb-4">
                     You don't have any scheduled appointments.
                   </p>
-                  <Button asChild>
-                    <Link href="/appointments/book">Book Your First Appointment</Link>
-                  </Button>
+                  <div className="flex justify-center mx-auto space-x-2">
+                    {session?.user?.role === 'dietitian' ? (
+                      <>
+                        <Button asChild variant="outline">
+                          <Link href="/appointments/book">Book with Dietitian</Link>
+                        </Button>
+                        <Button asChild>
+                          <Link href="/appointments/book-client">Book with Client</Link>
+                        </Button>
+                      </>
+                    ) : (
+                      <Button asChild>
+                        <Link href="/appointments/book">Book Your First Appointment</Link>
+                      </Button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             ) : (

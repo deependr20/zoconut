@@ -4,24 +4,11 @@ import Stripe from 'stripe';
 import connectDB from '@/lib/db/connection';
 import Payment from '@/lib/db/models/Payment';
 
-// Initialize Stripe only when needed to avoid build-time errors
-function getStripe() {
-  const secretKey = process.env.STRIPE_SECRET_KEY;
-  if (!secretKey) {
-    throw new Error('STRIPE_SECRET_KEY is not configured');
-  }
-  return new Stripe(secretKey, {
-    apiVersion: '2025-07-30.basil',
-  });
-}
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2025-07-30.basil',
+});
 
-function getWebhookSecret() {
-  const secret = process.env.STRIPE_WEBHOOK_SECRET;
-  if (!secret) {
-    throw new Error('STRIPE_WEBHOOK_SECRET is not configured');
-  }
-  return secret;
-}
+const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
@@ -31,8 +18,6 @@ export async function POST(request: NextRequest) {
   let event: Stripe.Event;
 
   try {
-    const stripe = getStripe();
-    const endpointSecret = getWebhookSecret();
     event = stripe.webhooks.constructEvent(body, sig!, endpointSecret);
   } catch (err) {
     console.error('Webhook signature verification failed:', err);
