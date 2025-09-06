@@ -5,20 +5,25 @@ import { useSession } from 'next-auth/react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, AreaChart, Area
 } from 'recharts';
-import { 
-  Users, 
+import {
+  Users,
   Calendar,
   DollarSign,
   TrendingUp,
   Activity,
   Target,
   Clock,
-  Award
+  Award,
+  ShoppingCart,
+  Package,
+  CreditCard,
+  RefreshCw
 } from 'lucide-react';
 import { format, subDays, startOfMonth, endOfMonth } from 'date-fns';
 
@@ -37,14 +42,57 @@ interface AnalyticsData {
   revenueByMonth: Array<{ month: string; revenue: number }>;
 }
 
+interface WooCommerceOrder {
+  id: number;
+  orderNumber: string;
+  status: string;
+  total: number;
+  currency: string;
+  dateCreated: string;
+  dateModified: string;
+  datePaid: string | null;
+  customer: {
+    name: string;
+    email: string;
+    phone: string;
+    city: string;
+    country: string;
+  };
+  shipping: {
+    name: string;
+    city: string;
+    country: string;
+  };
+  payment: {
+    method: string;
+    methodTitle: string;
+    transactionId: string;
+  };
+  customerId: number;
+}
+
+interface WooCommerceData {
+  orders: WooCommerceOrder[];
+  summary: {
+    totalOrders: number;
+    totalRevenue: number;
+    averageOrderValue: number;
+    currency: string;
+  };
+}
+
 export default function AnalyticsPage() {
   const { data: session } = useSession();
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [wooOrders, setWooOrders] = useState<WooCommerceOrder[]>([]);
+  const [wooSummary, setWooSummary] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingOrders, setLoadingOrders] = useState(false);
   const [timeRange, setTimeRange] = useState('6months');
 
   useEffect(() => {
     fetchAnalytics();
+    fetchWooCommerceOrders();
   }, [timeRange]);
 
   const fetchAnalytics = async () => {
@@ -100,6 +148,25 @@ export default function AnalyticsPage() {
       console.error('Error fetching analytics:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchWooCommerceOrders = async () => {
+    try {
+      setLoadingOrders(true);
+
+      const response = await fetch('/api/woocommerce/orders?status=processing');
+      if (response.ok) {
+        const data = await response.json();
+        setWooOrders(data.orders || []);
+        setWooSummary(data.summary || null);
+      } else {
+        console.error('Failed to fetch WooCommerce orders');
+      }
+    } catch (error) {
+      console.error('Error fetching WooCommerce orders:', error);
+    } finally {
+      setLoadingOrders(false);
     }
   };
 
@@ -395,6 +462,163 @@ export default function AnalyticsPage() {
             <CardContent>
               <p className="text-2xl font-bold text-purple-600">4.8/5</p>
               <p className="text-sm text-gray-600">Average rating</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* WooCommerce Orders Section */}
+        <div className="mt-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">WooCommerce Orders (Processing)</h2>
+            <Button
+              onClick={fetchWooCommerceOrders}
+              disabled={loadingOrders}
+              variant="outline"
+              size="sm"
+            >
+              {loadingOrders ? (
+                <LoadingSpinner className="h-4 w-4 mr-2" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              Refresh
+            </Button>
+          </div>
+
+          {/* WooCommerce Summary Cards */}
+          {wooSummary && (
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center space-x-2">
+                    <ShoppingCart className="h-5 w-5 text-blue-600" />
+                    <span>Total Orders</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold text-blue-600">{wooSummary.totalOrders}</p>
+                  <p className="text-sm text-gray-600">Processing orders</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center space-x-2">
+                    <DollarSign className="h-5 w-5 text-green-600" />
+                    <span>Total Revenue</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold text-green-600">
+                    ₹{wooSummary.totalRevenue.toFixed(2)}
+                  </p>
+                  <p className="text-sm text-gray-600">From processing orders</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center space-x-2">
+                    <TrendingUp className="h-5 w-5 text-purple-600" />
+                    <span>Avg Order Value</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold text-purple-600">
+                    ₹{wooSummary.averageOrderValue.toFixed(2)}
+                  </p>
+                  <p className="text-sm text-gray-600">Per order</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg flex items-center space-x-2">
+                    <Package className="h-5 w-5 text-orange-600" />
+                    <span>Currency</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold text-orange-600">{wooSummary.currency}</p>
+                  <p className="text-sm text-gray-600">Base currency</p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {/* WooCommerce Orders Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Package className="h-5 w-5" />
+                <span>Processing Orders</span>
+              </CardTitle>
+              <CardDescription>
+                Recent orders with processing status from WooCommerce
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loadingOrders ? (
+                <div className="flex items-center justify-center py-8">
+                  <LoadingSpinner />
+                </div>
+              ) : wooOrders.length === 0 ? (
+                <div className="text-center py-8">
+                  <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-500">No processing orders found</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-3 px-4 font-medium">Order #</th>
+                        <th className="text-left py-3 px-4 font-medium">Customer</th>
+                        <th className="text-left py-3 px-4 font-medium">Total</th>
+                        <th className="text-left py-3 px-4 font-medium">Payment</th>
+                        <th className="text-left py-3 px-4 font-medium">Date</th>
+                        <th className="text-left py-3 px-4 font-medium">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {wooOrders.map((order) => (
+                        <tr key={order.id} className="border-b hover:bg-gray-50">
+                          <td className="py-3 px-4">
+                            <span className="font-medium text-blue-600">#{order.orderNumber}</span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div>
+                              <p className="font-medium">{order.customer.name}</p>
+                              <p className="text-sm text-gray-500">{order.customer.email}</p>
+                              <p className="text-sm text-gray-500">{order.customer.city}, {order.customer.country}</p>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="font-medium">₹{order.total.toFixed(2)}</span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div>
+                              <p className="text-sm">{order.payment.methodTitle}</p>
+                              <p className="text-xs text-gray-500">ID: {order.payment.transactionId}</p>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div>
+                              <p className="text-sm">{format(new Date(order.dateCreated), 'MMM dd, yyyy')}</p>
+                              <p className="text-xs text-gray-500">{format(new Date(order.dateCreated), 'HH:mm')}</p>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                              {order.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
